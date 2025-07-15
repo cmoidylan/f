@@ -1,0 +1,123 @@
+version: '3.7'
+
+networks:
+  jellyfin-net:
+    driver: bridge
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    ports:
+      - "8096:8096"
+    volumes:
+      - /home/mediauser/docker/jellyfin/config:/config
+      - /home/mediauser/media/anime:/media/anime
+      - /home/mediauser/media/film:/media/film
+      - /home/mediauser/media/serie:/media/serie
+    networks:
+      - jellyfin-net
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/mediauser/docker/sonarr/config:/config
+      - /home/mediauser/media/anime:/media/anime
+      - /home/mediauser/media/film:/media/film
+      - /home/mediauser/media/serie:/media/serie
+      - /home/mediauser/downloads:/downloads
+    ports:
+      - "8989:8989"
+    networks:
+      - jellyfin-net
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - WEBUI_PORT=8190
+    volumes:
+      - /home/mediauser/docker/qbittorrent/config:/config
+      - /home/mediauser/downloads:/downloads
+      - /home/mediauser/media/anime:/media/anime
+      - /home/mediauser/media/film:/media/film
+      - /home/mediauser/media/serie:/media/serie
+    ports:
+      - "8190:8190"
+      - "6881:6881"
+      - "6881:6881/udp"
+    networks:
+      - jellyfin-net
+    restart: unless-stopped
+
+  jellyseer:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseer
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/mediauser/media:/media
+      - /home/mediauser/docker/jellyseer/config:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+
+  zoraxy:
+    image: zoraxydocker/zoraxy:latest
+    container_name: zoraxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8000:8000"
+    volumes:
+      - /home/mediauser/docker/zoraxy/config:/opt/zoraxy/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      FASTGEOIP: "true"
+      ZEROTIER: "true"
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000      # Remplace par l'UID réel de mediauser
+      - PGID=1000      # Remplace par le GID réel de mediauser
+      - TZ=Europe/Paris
+    volumes:
+      - /home/mediauser/docker/radarr/config:/config
+      - /home/mediauser/media/film:/media/film
+      - /home/mediauser/downloads:/downloads
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+    networks:
+      - jellyfin-net
+  tinyfilemanager:
+    image: tinyfilemanager/tinyfilemanager:master
+    container_name: tinyfilemanager
+    environment:
+    - PUID=1000
+    - PGID=1000
+    ports:
+      - "8180:80"
+    volumes:
+      - /home/mediauser/docker/tinyfilemanager/app:/var/www/html/data
+      - /home/mediauser/media/anime:/var/www/html/media/anime
+      - /home/mediauser/media/film:/var/www/html/media/film
+      - /home/mediauser/media/serie:/var/www/html/media/serie
+      - /home/mediauser/downloads:/var/www/html/downloads
+    restart: always
